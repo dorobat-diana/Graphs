@@ -1,77 +1,108 @@
+import os
+
 from Graph import *
 class UI:
     def __init__(self):
         self.graph = graph()
+    def read_number(self,message):
+        number = input(message)
+        #verify if number is a int
+        while not number.lstrip('-').isdigit():
+            print("The number must be a number!")
+            number = input(message)
+        #make number a int
+        number=int(number)
+        return number
+
     def empty_graph(self):
+        self.graph = graph()
         print("Empty graph created.")
     def nm_graph(self):
-        n = input("Number of vertices: ")
-        m = input("Number of edges: ")
+        n = self.read_number("Number of vertices: ")
+        m = self.read_number("Number of edges: ")
         try:
-            self.graph = random_graph(int(n),int(m))
+            if n>=0 and m>=0:
+                self.graph = random_graph(n,m)
+                print("Graph created.")
+            else:
+                print("only positive numbers!")
         except GraphError as e:
             print(e)
-        print("Graph created.")
+
     def add_vertex(self):
-        vertex = int(input("Vertex: "))
+        vertex = self.read_number("Vertex: ")
         try:
-            self.graph.add_vertex(vertex)
+            if vertex>=0:
+                self.graph.add_vertex(vertex)
+                print("Vertex added.")
+            else:
+                print("only positive numbers!")
         except GraphError as e:
             print(e)
-        print("Vertex added.")
+
     def add_edge(self):
-        x = int(input("First vertex: "))
-        y = int(input("Second vertex: "))
-        c = int(input("Cost: "))
+        x = self.read_number("First vertex: ")
+        y = self.read_number("Second vertex: ")
+        c = self.read_number("Cost: ")
         try:
             self.graph.add_edge(x, y, c)
+            print("Edge added.")
         except GraphError as e:
             print(e)
-        print("Edge added.")
+
     def rem_vertex(self):
-        x = int(input("Vertex: "))
+        x = self.read_number("Vertex: ")
         try:
             self.graph.remove_vertex(x)
+            print("Vertex removed.")
         except GraphError as e:
             print(e)
-        print("Vertex removed.")
+
     def rem_edge(self):
-        x = int(input("First vertex: "))
-        y = int(input("Second vertex: "))
+        x = self.read_number("First vertex: ")
+        y = self.read_number("Second vertex: ")
         try:
             self.graph.remove_edge(x, y)
+            print("Edge removed.")
         except GraphError as e:
             print(e)
-        print("Edge removed.")
+
     def change_edge(self):
-        x = int(input("First vertex: "))
-        y = int(input("Second vertex: "))
-        c = int(input("New cost: "))
+        x = self.read_number("First vertex: ")
+        y = self.read_number("Second vertex: ")
+        c = self.read_number("New cost: ")
         try:
             self.graph.set_cost_on_position(x, y, c)
+            print("Cost changed.")
         except GraphError as e:
             print(e)
-        print("Cost changed.")
+
     def in_degree(self):
-        x = int(input("Vertex: "))
-        print(self.graph.in_degree(x))
+        x = self.read_number("Vertex: ")
+        try:
+            print(self.graph.in_degree(x))
+        except GraphError as e:
+            print(e)
     def out_degree(self):
-        x = int(input("Vertex: "))
-        print(self.graph.out_degree(x))
+        x = self.read_number("Vertex: ")
+        try:
+            print(self.graph.out_degree(x))
+        except GraphError as e:
+            print(e)
     def cnt_vertices(self):
         print(self.graph.vertices)
     def cnt_edges(self):
         print(self.graph.edges)
     def is_edge(self):
-        x = int(input("First vertex: "))
-        y = int(input("Second vertex: "))
+        x = self.read_number("First vertex: ")
+        y = self.read_number("Second vertex: ")
         print(self.graph.is_edge(x, y))
     def print_vertex_list(self):
         for i in self.graph.vertices_iterator():
             print(i," ")
     def print_outbound_list(self):
         obs=0
-        x = int(input("Vertex: "))
+        x = self.read_number("Vertex: ")
         for i in self.graph.outbound_edges(x):
             print(i," ")
             obs=1
@@ -80,7 +111,7 @@ class UI:
 
     def print_inbound_list(self):
         obs=0
-        x = int(input("Vertex: "))
+        x = self.read_number("Vertex: ")
         for i in self.graph.inbound_edges(x):
             print(i," ")
             obs=1
@@ -95,6 +126,10 @@ class UI:
             print("No edges in the graph.")
     def readfile(self):
         file = input("File: ")
+        #verify if file exists
+        while not os.path.isfile(file):
+            print("The file doesn't exist!")
+            file = input("File: ")
         try:
             self.graph = read_file(file)
         except GraphError as e:
@@ -103,6 +138,10 @@ class UI:
             print("Graph created.")
     def write_file(self):
         file = input("File: ")
+        #verify if file name is empty
+        while file=="":
+            print("The file name is empty!")
+            file = input("File: ")
         try:
             write_file(file,self.graph)
         except GraphError as e:
@@ -148,7 +187,7 @@ class UI:
         print("}\n")
 
     def vertix_in_graph(self):
-        x = int(input("Vertex: "))
+        x = self.read_number("Vertex: ")
         print(self.graph.is_vertex(x))
 
     def graph_copy(self):
@@ -157,8 +196,8 @@ class UI:
         print("Graph copied.")
 
     def lowest_length_path(self):
-        x = int(input("First vertex: "))
-        y = int(input("Second vertex: "))
+        x = self.read_number("First vertex: ")
+        y = self.read_number("Second vertex: ")
         try:
             path=self.graph.lowest_length_path(x,y)
         except GraphError as e:
@@ -173,8 +212,8 @@ class UI:
                 print("Lowest length path is of length",len(path)-1)
 
     def lowest_cost_path(self):
-        x = int(input("First vertex: "))
-        y = int(input("Second vertex: "))
+        x = self.read_number("First vertex: ")
+        y = self.read_number("Second vertex: ")
         try:
             path,cost=self.graph.lowest_cost_path(x,y)
         except GraphError as e:

@@ -1,5 +1,7 @@
 import heapq
 from copy import deepcopy
+from os import close
+
 from error import *
 import random
 
@@ -16,17 +18,30 @@ def read_file(file_name):
         raise GraphError("file does not exist")
     v, e = map(int, file.readline().split())
     g = graph(v, e)
-    for i in range(e):
-        vertex1, vertex2, edge_cost = map(int, file.readline().split())
-        try:
-            g.add_vertex(vertex1)
-        except GraphError:
-            pass
-        try:
-            g.add_vertex(vertex2)
-        except GraphError:
-            pass
-        g.add_edge(vertex1, vertex2, edge_cost)
+    for line in file:
+        tokens=line.split()
+        if len(tokens) == 2:
+            vertex1 = int(tokens[0])
+            try:
+                g.add_vertex(vertex1)
+            except GraphError:
+                pass
+        else:
+            vertex1 = int(tokens[0])
+            vertex2 = int(tokens[1])
+            edge_cost = int(tokens[2])
+            try:
+                g.add_vertex(vertex1)
+            except GraphError:
+                pass
+            try:
+                g.add_vertex(vertex2)
+            except GraphError:
+                pass
+            try:
+                g.add_edge(vertex1, vertex2, edge_cost)
+            except GraphError:
+                pass
     file.close()
     return g
 
@@ -60,6 +75,9 @@ def random_graph(vertices, edges):
     :param edges:
     :return:
     """
+    #verify if the number of edges is valid
+    if edges > vertices * (vertices - 1):
+        raise GraphError("too many edges")
     g = graph(vertices, edges)
     for j in range(vertices):
         g.add_vertex(j)
