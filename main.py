@@ -248,6 +248,65 @@ class UI:
                 else:
                     print("Higher cost path is of length",cost)
 
+    def connected_components(self):
+        print("The connected components are: ")
+        for i in self.graph.find_connected_components_unsigned():
+            print(i)
+
+    def scc(self):
+        print("The strongly connected components are: ")
+        for i in self.graph.find_connected_components_signed():
+            print(i)
+
+    def biconnected_components(self):
+        print("The biconnected components are: ")
+        for i in self.graph.find_biconnected_components():
+            print(i)
+    def negative_cycle(self):
+        try:
+            vertex= self.read_number("Vertex: ")
+            #verify if vertex is in graph
+            while not self.graph.is_vertex(vertex):
+                print("The vertex is not in the graph!")
+                vertex = self.read_number("Vertex: ")
+            print(self.graph.negative_cycle(vertex))
+        except GraphError as e:
+            print(e)
+    def Floyd_Warshall(self):
+        try:
+            matrix=self.graph.FloydWarshall()
+            for i in range(self.graph.vertices):
+                for j in range(self.graph.vertices):
+                    print(matrix[i][j],end=" ")
+                print()
+        except GraphError as e:
+            print(e)
+
+    def nr_paths(self):
+        try:
+            x = self.read_number("First vertex: ")
+            y = self.read_number("Second vertex: ")
+            #verify if vertex is in graph
+            while not self.graph.is_vertex(x):
+                print("The vertex is not in the graph!")
+                x = self.read_number("First vertex: ")
+            while not self.graph.is_vertex(y):
+                print("The vertex is not in the graph!")
+                y = self.read_number("Second vertex: ")
+            print(self.graph.count_paths(x,y))
+        except GraphError as e:
+            print(e)
+    def Kruskal(self):
+        try:
+            print(self.graph.Kruskals_algorithm())
+        except GraphError as e:
+            print(e)
+
+    def Prime(self):
+        try:
+            print(self.graph.primMST())
+        except GraphError as e:
+            print(e)
     def start(self):
         commands = {"1": self.empty_graph,
                     "2": self.nm_graph,
@@ -272,7 +331,15 @@ class UI:
                     "21": self.graph_copy,
                     "22": self.lowest_length_path,
                     "23": self.lowest_cost_path,
-                    "24" : self.higher_cost_path,}
+                    "24" : self.higher_cost_path,
+                    "25": self.connected_components,
+                    "26": self.scc,
+                    "27": self.biconnected_components,
+                    "28": self.negative_cycle,
+                    "29": self.Floyd_Warshall,
+                    "30": self.nr_paths,
+                    "31": self.Kruskal,
+                    "32": self.Prime}
         while True:
             print("1. Generate an empty graph")
             print("2. Generate a graph with n vertices and m random edges")
@@ -295,9 +362,17 @@ class UI:
             print("19. Print the dictionaries")
             print("20. Check if a vertex is in the graph")
             print("21. Copy the graph")
-            print("22. find the lowest length path between two vertices")
-            print("23. find the lowest cost path between two vertices")
-            print("24. find the higher cost path between two vertices")
+            print("22. Find the lowest length path between two vertices")
+            print("23. Find the lowest cost path between two vertices")
+            print("24. Find the higher cost path between two vertices")
+            print("25. Find the connected components of the unsigned graph")
+            print("26. Find strongly connected components of the signed graph")
+            print("27. Find the biconnected components of the unsigned graph")
+            print("28. Verify if a connected graph has any negative cycles")
+            print("29. Get the matrix with all the shortest paths")
+            print("30. Find the number of paths between two vertices")
+            print("31. Construct a spanning tree using Kruskal's algorithm")
+            print("32. Construct a spanning tree using Prim's algorithm"  )
             print("0. Exit")
             index = input("> ")
             if index in commands:

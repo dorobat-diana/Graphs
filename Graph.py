@@ -1,4 +1,6 @@
 import heapq
+import sys
+from collections import deque
 from copy import deepcopy
 from os import close
 
@@ -19,7 +21,7 @@ def read_file(file_name):
     v, e = map(int, file.readline().split())
     g = graph(v, e)
     for line in file:
-        tokens=line.split()
+        tokens = line.split()
         if len(tokens) == 2:
             vertex1 = int(tokens[0])
             try:
@@ -75,7 +77,7 @@ def random_graph(vertices, edges):
     :param edges:
     :return:
     """
-    #verify if the number of edges is valid
+    # verify if the number of edges is valid
     if edges > vertices * (vertices - 1):
         raise GraphError("too many edges")
     g = graph(vertices, edges)
@@ -100,6 +102,7 @@ class graph:
         self._list_costs = dict()
         self._invertices = dict()
         self._outvertices = dict()
+        self._time = 0
 
     def vertices_iterator(self):
         """
@@ -400,7 +403,6 @@ class graph:
         # If we've explored all vertices and haven't found a path from vertex2 to vertex1, return an empty path and a cost of 0
         return [], 0
 
-
     def dfs_util(self, v, visited, stack, rec_stack):
         # Mark current vertex as visited and add it to recursion stack
         visited.add(v)
@@ -428,7 +430,6 @@ class graph:
                     raise GraphError("Graph contains cycles and does not have a topological ordering")
         # Return the reversed stack as the topological order
         return stack[::-1]
-
 
     def highest_cost_path(self, vertex1, vertex2):
         """Verify if the corresponding graph is a DAG and performs a topological sorting of the activities using the algorithm based on depth-first traversal (Tarjan's algorithm).
@@ -466,3 +467,309 @@ class graph:
                     heapq.heappush(q, [dist[neighbor], neighbor])
         # Return the highest cost path and the corresponding cost
         return path, dist[vertex2]
+
+    def find_connected_components_unsigned(self):
+        """Finds the connected components of an unsigned graph, in O(m+n)."""
+        visited = set()
+        components = []
+        # Perform depth-first search on each vertex
+        for vertex in self.vertices_iterator():
+            if vertex not in visited:
+                component = []
+                self.dfs_util_unsigned(vertex, visited, component)
+                components.append(component)
+        return components
+
+    def dfs_util_unsigned(self, v, visited, component):
+        """Utility function for find_connected_components_unsigned."""
+        visited.add(v)
+        component.append(v)
+        # Recursively visit all neighbors of the current vertex
+        for neighbor in self.outbound_edges(v):
+            if neighbor not in visited:
+                self.dfs_util_unsigned(neighbor, visited, component)
+
+    def dfs(self, v, visited, stack):
+        # Mark current vertex as visited
+        visited.add(v)
+        # Recursively visit all neighbors of the current vertex
+        for neighbor in self.outbound_edges(v):
+            if neighbor not in visited:
+                self.dfs(neighbor, visited, stack)
+        # Add current vertex to the result stack
+        stack.append(v)
+
+    def dfs_reversed(self, v, visited, stack):
+        # Mark current vertex as visited
+        visited.add(v)
+        # Recursively visit all neighbors of the current vertex
+        for neighbor in self.inbound_edges(v):
+            if neighbor not in visited:
+                self.dfs_reversed(neighbor, visited, stack)
+        # Add current vertex to the result stack
+        stack.append(v)
+
+    def find_connected_components_signed(self):
+        """Finds the connected components of a signed graph, in O(m+n), using Kosaraju's algorithm."""
+        visited = set()
+        stack = []
+
+        # Perform depth-first search on each vertex
+        for vertex in self.vertices_iterator():
+            if vertex not in visited:
+                self.dfs(vertex, visited, stack)
+        # Create the transpose graph
+        visited = set()
+        components = []
+
+        # Perform depth-first search on each vertex in the transpose graph
+        while len(stack) > 0:
+            vertex = stack.pop()
+            if vertex not in visited:
+                component = []
+                self.dfs_reversed(vertex, visited, component)
+                components.append(component)
+        return components
+
+    def find_biconnected_components(self):
+        """Finds the biconnected components of an undirected graph, in O(m+n) using Tarjan's algorithm."""
+        visited = set()
+        stack = []
+        components = []
+        low = {}
+        disc = {}
+        parent = {}
+        for vertex in self.vertices_iterator():
+            parent[vertex] = None  # Initialize all vertices with no parent
+        time = 0
+        # Perform depth-first search on each vertex
+        for vertex in self.vertices_iterator():
+            if vertex not in visited:
+                self.dfs_util_biconnected(vertex, visited, stack, low, disc, parent, components)
+        return components
+
+    def dfs_util_biconnected(self, v, visited, stack, low, disc, parent, components):
+        """Utility function for find_biconnected_components."""
+        visited.add(v)
+        disc[v] = self._time
+        low[v] = self._time
+        self._time += 1
+        children = 0
+        # Recursively visit all neighbors of the current vertex
+        for neighbor in self.outbound_edges(v):
+            if neighbor not in visited:
+                children += 1
+                parent[neighbor] = v
+                stack.append([v, neighbor])
+                self.dfs_util_biconnected(neighbor, visited, stack, low, disc, parent, components)
+                low[v] = min(low[v], low[neighbor])
+                if (parent[v] == None and children >= 1) or (parent[v] != None and low[neighbor] >= disc[v]):
+                    component = []
+                    while stack[-1] != [v, neighbor]:
+                        component.append(stack.pop())
+                    component.append(stack.pop())
+                    components.append(component)
+
+            elif neighbor != parent[v]:
+                low[v] = min(low[v], disc[neighbor])
+        return components
+
+    def negative_cycle(self, vertex):
+        """Finds the lowest cost path between two given vertices, in O(m*n) with Bellman-Ford's algorithm."""
+        # Check if the vertices exist
+        if not self.is_vertex(vertex):
+            raise GraphError("Vertex does not exist")
+
+        # Step 1: Initialize distances from src to all other vertices
+        # as INFINITE
+        dist = [float("Inf")] * self.vertices
+        dist[vertex] = 0
+
+        # Step 2: Relax all edges |V| - 1 times. A simple shortest
+        # path from src to any other vertex can have at-most |V| - 1
+        # edges
+        for _ in range(self.vertices - 1):
+            # Update dist value and parent index of the adjacent vertices of
+            # the picked vertex. Consider only those vertices which are still in
+            # queue
+            for u in self.vertices_iterator():
+                for v in self.outbound_edges(u):
+                    if dist[u] != float("Inf") and dist[u] + self.get_cost(u, v) < dist[v]:
+                        dist[v] = dist[u] + self.get_cost(u, v)
+
+        # Step 3: check for negative-weight cycles. The above step
+        # guarantees shortest distances if graph doesn't contain
+        # negative weight cycle. If we get a shorter path, then there
+        # is a cycle.
+
+        for u in self.vertices_iterator():
+            for v in self.outbound_edges(u):
+                if dist[u] != float("Inf") and dist[u] + self.get_cost(u, v) < dist[v]:
+                    return ("Graph contains negative weight cycle")
+        return ("Graph does not contain negative weight cycle")
+
+    def FloydWarshall(self):
+        """Finds the lowest cost path between two given vertices, in O(m*n) with Floyd-Warshall's algorithm."""
+        # dist[][] will be the output matrix that will finally have the shortest
+        # distances between every pair of vertices
+        # Initialize the solution matrix same as input graph matrix. Or
+        # we can say the initial values of shortest distances are based
+        # on shortest paths considering no intermediate vertex.
+        dist = [[float("Inf")] * self.vertices for _ in range(self.vertices)]
+        for i in range(self.vertices):
+            for j in range(self.vertices):
+                if i == j:
+                    dist[i][j] = 0
+                try:
+                    dist[i][j] = self.get_cost(i, j)
+                except GraphError:
+                    pass
+
+        # Add all vertices one by one to the set of intermediate vertices.
+        # ---> Before start of an iteration, we have shortest distances
+        # between all pairs of vertices such that the shortest distances
+        # consider only the vertices in set {0, 1, 2, .. k-1} as intermediate vertices.
+        # ----> After the end of an iteration, vertex no. k is added to the set of intermediate
+        # vertices and the set becomes {0, 1, 2, .. k}
+        for k in range(self.vertices):
+            # Pick all vertices as source one by one
+            for i in range(self.vertices):
+                # Pick all vertices as destination for the
+                # above picked source
+                for j in range(self.vertices):
+                    # If vertex k is on the shortest path from
+                    # i to j, then update the value of dist[i][j]
+                    if dist[i][k] != float("Inf") and dist[k][j] != float("Inf") and dist[i][k] + dist[k][j] < dist[i][
+                        j]:
+                        dist[i][j] = dist[i][k] + dist[k][j]
+        return dist
+
+    def count_paths(self, source, destination):
+        """
+        Counts the number of paths between two given vertices, in O(m+n) with BFS, using the algorithm based on predecessor counters.
+        """
+        num_vertices = self.vertices
+        count = [0] * num_vertices
+        count[source] = 1  # There is one path from source to itself
+
+        queue = deque([source])
+
+        while queue:
+            vertex = queue.popleft()
+
+            for neighbor in self.outbound_edges(vertex):
+                if count[neighbor] == 0:
+                    queue.append(neighbor)
+                    count[neighbor] = count[vertex]
+                else:
+                    count[neighbor] += count[vertex]
+
+        return count[destination]
+
+    def find(self, parent, i):
+        """A utility function to find set of an element i (uses path compression technique)."""
+        if parent[i] == i:
+            return i
+        return self.find(parent, parent[i])
+
+    def Kruskals_algorithm(self):
+        """Finds the minimum spanning tree of a graph, in O(m*log(n)) with Kruskal's algorithm."""
+        # Create a list of all edges in the graph, sorted by increasing order of cost
+        edges = []
+        for e in self.edges_iterator():
+            edges.append(e)
+        edges.sort(key=lambda e: self.get_cost(e[0], e[1]))
+        result = []
+        i=0
+        e=0
+        parent = []
+        rank = []
+        # Create V subsets with single elements
+        for node in range(self.vertices):
+            parent.append(node)
+            rank.append(0)
+        # Number of edges to be taken is equal to V-1
+        while e < self.vertices - 1:
+            # Pick the smallest edge and increment the index for next iteration
+            u, v ,w= edges[i]
+            i = i + 1
+            x = self.find(parent, u)
+            y = self.find(parent, v)
+            # If including this edge does't cause cycle, include it in result
+            if x != y:
+                e = e + 1
+                result.append([u, v, w])
+                self.union(parent, rank, x, y)
+        return result
+
+    def union(self, parent, rank, x, y):
+
+        # Attach smaller rank tree under root of
+        # high rank tree (Union by Rank)
+        if rank[x] < rank[y]:
+            parent[x] = y
+        elif rank[x] > rank[y]:
+            parent[y] = x
+
+        # If ranks are same, then make one as root
+        # and increment its rank by one
+        else:
+            parent[y] = x
+            rank[x] += 1
+
+        # A utility function to find the vertex with
+        # minimum distance value, from the set of vertices
+        # not yet included in shortest path tree
+
+    def minKey(self, key, mstSet):
+
+        # Initialize min value
+        min = sys.maxsize
+
+        for v in self.vertices_iterator():
+            if key[v] < min and mstSet[v] == False:
+                min = key[v]
+                min_index = v
+
+        return min_index
+
+        # Function to construct and print MST for a graph
+        # represented using adjacency matrix representation
+
+    def primMST(self):
+
+        # Key values used to pick minimum weight edge in cut
+        key = [sys.maxsize] * self.vertices
+        parent = [None] * self.vertices  # Array to store constructed MST
+        # Make key 0 so that this vertex is picked as first vertex
+        key[0] = 0
+        mstSet = [False] * self.vertices
+
+        parent[0] = -1  # First node is always the root of
+
+        for cout in range(self.vertices):
+
+            # Pick the minimum distance vertex from
+            # the set of vertices not yet processed.
+            # u is always equal to src in first iteration
+            u = self.minKey(key, mstSet)
+
+            # Put the minimum distance vertex in
+            # the shortest path tree
+            mstSet[u] = True
+
+            # Update dist value of the adjacent vertices
+            # of the picked vertex only if the current
+            # distance is greater than new distance and
+            # the vertex in not in the shortest path tree
+            for v in range(self.vertices):
+
+                # graph[u][v] is non zero only for adjacent vertices of m
+                # mstSet[v] is false for vertices not yet included in MST
+                # Update the key only if graph[u][v] is smaller than key[v]
+                if self.is_edge(u,v) and self.get_cost(u,v) > 0 and mstSet[v] == False \
+                        and key[v] > self.get_cost(u,v):
+                    key[v] = self.get_cost(u,v)
+                    parent[v] = u
+
+        return parent

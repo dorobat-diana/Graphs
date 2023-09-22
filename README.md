@@ -24,6 +24,18 @@ Topological Sorting: There is support for topological sorting of the graph, whic
 
 Highest Cost Path: Users can find the highest cost path between two vertices in the graph.
 
+Connected Components: Finds connected components in unsigned graphs, strongly connected components in signed graphs, and biconnected components in unsigned graphs.
+
+Cycle Detection: Verifies if a connected graph contains any negative cycles.
+
+Shortest Paths Matrix: Computes and displays the matrix with all the shortest paths between vertices.
+
+Number of Paths: Calculates the number of paths between two given vertices.
+
+Spanning Trees: Constructs spanning trees using Kruskal's and Prim's algorithms.
+
+Number of Paths: Calculates the number of paths between two given vertices.
+
 Error Handling: The project includes error handling for various operations, ensuring robustness.
 
 Overall, this Python project provides a versatile tool for working with directed graphs, making it suitable for a wide range of applications in graph theory and related fields. It offers functionalities for graph creation, manipulation, analysis, and path finding, making it a valuable resource for graph-related tasks.
